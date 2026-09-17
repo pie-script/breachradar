@@ -30,8 +30,9 @@ def scan_domain(target_domain):
             search = GoogleSearch(params)
             results= search.get_dict()
             organic_results=results.get('organic_results', [])
+            
             for item in organic_results:
-                findings={
+                finding={
                     "category":category,
                     "title" : item.get('title'),
                     "link":item.get('link'),
@@ -41,8 +42,8 @@ def scan_domain(target_domain):
                     "query_used":query
 
                 }
-                all_findings.append(findings)
+                all_findings.append(finding)
         except Exception as e:
-            print(f"Error Scanning the categories : {category} {e}")
-
+            print(f"[!] Error querying category '{category}': {e}")
+            
     return all_findings
