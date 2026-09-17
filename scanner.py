@@ -1,3 +1,4 @@
+from _sitebuiltins import Quitter
 import os
 from dotenv import load_dotenv
 from serpapi import GoogleSearch
@@ -12,3 +13,8 @@ DORK_CATEGORIES = {
     "Sensitive Files & Logs": "ext:log (error OR password OR exception)",
     "Sensitive Documents": 'filetype:pdf ("confidential" OR "internal use only")',
 }
+
+def scan_domain(target_domain):
+    for category, dork in DORK_CATEGORIES.items():
+        query = f"site:{target_domain} {dork}"
+        
