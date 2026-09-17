@@ -15,6 +15,35 @@ DORK_CATEGORIES = {
 }
 
 def scan_domain(target_domain):
+
+    all_findings=[]
     for category, dork in DORK_CATEGORIES.items():
         query = f"site:{target_domain} {dork}"
-        
+    
+        params={
+            "engine": "google",
+            "q" : query,
+            "num":5,
+            "api_key":SERPAPI_API_KEY
+        }
+    
+        try:
+            search = GoogleSearch(params)
+            results= search.get_dict()
+            organic_results=results.get('organic_results', [])
+            for item in organic_results:
+                findings={
+                    "category":category,
+                    "title" : item.get('title'),
+                    "link":item.get('link'),
+                    "snippet":item.get('snippet'),
+                    "source":item.get('source'),
+                    "date" : item.get('date'),
+                    "query_used":query
+
+                }
+                all_findings.append(findings)
+        except Exception as e:
+            print(f"Error Scanning the categories : {category} {e}")
+
+    return all_findings
