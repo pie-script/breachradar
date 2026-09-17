@@ -47,3 +47,17 @@ def scan_domain(target_domain):
             print(f"[!] Error querying category '{category}': {e}")
             
     return all_findings
+
+if __name__ == "__main__":
+    # Test on an open testbed
+    target = "testphp.vulnweb.com"
+    
+    print(f"[*] Running test scan on {target}...\n")
+    results = scan_domain(target)
+    
+    print(f"\n[+] Total exposures found: {len(results)}")
+    for r in results:
+        print(f"\n[{r['category']}]")
+        print(f"Title: {r['title']}")
+        print(f"URL:   {r['link']}")
+        print(f"Snippet: {r['snippet']}")
