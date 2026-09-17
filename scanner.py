@@ -1,4 +1,3 @@
-from _sitebuiltins import Quitter
 import os
 from dotenv import load_dotenv
 from serpapi import GoogleSearch
