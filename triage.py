@@ -4,6 +4,7 @@ import os
 import json
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 
 load_dotenv()
 
@@ -42,11 +43,11 @@ def triage_findings(findings : list):
     user_content=f"Findings to evaluate :\n{findings_str}"
 
     response= client.models.generate_content(
-        model='gemini-2.5-flash',
+        model='gemini-3.5-flash-lite',
         contents=[TRIAGE_PROMPT,user_content],
-        config=type.GenerateContentConfig(
+        config=types.GenerateContentConfig(
             response_mime_type="application/json",
-            temparature=0.2
+            temperature=0.2
         )
     )
 
