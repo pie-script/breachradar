@@ -1,3 +1,4 @@
+from httpx import Response
 import os
 import json
 from dotenv import load_dotenv
@@ -31,3 +32,21 @@ Schema:
   }
 ]
 """
+
+def triage_findings(findings : list):
+    if not findings:
+        return []
+
+    findings_str = json.dumps(findings,indent=2)
+    user_content=f"Findings to evaluate :\n{findings_str}"
+
+    response= client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[TRIAGE_PROMPT,user_content],
+        config=type.GenerateContentConfig(
+            response_mime_type="application/json",
+            temparature=0.2
+        )
+    )
+    
+    return json.loads(response.text)
