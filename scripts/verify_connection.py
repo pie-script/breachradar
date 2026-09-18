@@ -1,8 +1,17 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from serpapi import GoogleSearch
 
-load_dotenv()
+# Load from repo root or backend folder
+env_root = Path(__file__).resolve().parent.parent / ".env"
+env_backend = Path(__file__).resolve().parent.parent / "backend" / ".env"
+if env_root.exists():
+    load_dotenv(env_root)
+elif env_backend.exists():
+    load_dotenv(env_backend)
+else:
+    load_dotenv()
 
 api_key = os.getenv("SERPAPI_API_KEY")
 
