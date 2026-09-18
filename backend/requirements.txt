@@ -1,0 +1,7 @@
+fastapi>=0.111
+uvicorn[standard]>=0.30
+pydantic>=2.7
+
+# Add whatever scanner.py / triage.py already depend on (e.g. google-search-results,
+# google-generativeai, requests, etc.) — they're not listed here since this scaffold
+# doesn't include those two files.
