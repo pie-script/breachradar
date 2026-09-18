@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Add backend directory to sys.path
+sys.path.append(str(Path(__file__).resolve().parent.parent / "backend"))
+
 import streamlit as st
 import pandas as pd
 from collections import Counter
@@ -227,7 +233,37 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 .insight-card { background:linear-gradient(135deg,rgba(230,57,70,.08),rgba(74,158,255,.04));border:1px solid rgba(230,57,70,.16);border-radius:11px;padding:13px 15px;margin-top:14px;color:#88a5bd;font-size:12px;line-height:1.55; }
 .insight-card strong { color:#e5edf6; }
 .filter-row { background:#080d17;border:1px solid #142238;border-radius:11px;padding:12px 14px;margin-bottom:15px; }
-@media (max-width: 800px) { .stat-strip { grid-template-columns:repeat(2,1fr); } .analytics-header { flex-direction:column; } .posture-box { text-align:left; } }
+
+/* ─ Hero stat cards (gradient) ─ */
+.hero-stat-row { display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px; }
+.hero-stat-card { border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25); }
+.hero-stat-card.urgent { background:linear-gradient(135deg,#c1121f 0%,#e63946 55%,#ff6b6b 100%); }
+.hero-stat-card.quality { background:linear-gradient(135deg,#0b3d91 0%,#1e6fd9 55%,#4a9eff 100%); }
+.hero-stat-icon { font-size:18px;opacity:.85;margin-bottom:6px; }
+.hero-stat-label { font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;color:rgba(255,255,255,.85); }
+.hero-stat-value { font:800 36px 'JetBrains Mono',monospace;color:#fff;letter-spacing:-1px;margin:6px 0 4px; }
+.hero-stat-sub { display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#fff;background:rgba(255,255,255,.16);border-radius:20px;padding:3px 10px; }
+
+/* ─ Donut chart (CSS conic-gradient) ─ */
+.donut-wrap { display:flex;align-items:center;gap:20px; }
+.donut-chart { width:140px;height:140px;border-radius:50%;position:relative;flex-shrink:0; }
+.donut-hole { position:absolute;inset:18px;background:#070b13;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center; }
+.donut-hole-value { font:800 22px 'JetBrains Mono',monospace;color:#d7e4f2;line-height:1; }
+.donut-hole-label { font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#4e6b87;margin-top:3px; }
+.donut-legend { display:flex;flex-direction:column;gap:8px;flex:1; }
+.legend-item { display:flex;align-items:center;gap:8px;font-size:12px;color:#a9bfd4; }
+.legend-dot { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
+.legend-count { margin-left:auto;font:700 12px 'JetBrains Mono',monospace;color:#d7e4f2; }
+
+/* ─ Horizontal mini bars (category breakdown) ─ */
+.hbar-list { display:flex;flex-direction:column;gap:10px;padding-top:2px; }
+.hbar-row { display:flex;align-items:center;gap:10px; }
+.hbar-label { width:112px;font-size:11px;color:#88a5bd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0; }
+.hbar-track { flex:1;height:8px;background:#111b2b;border-radius:6px;overflow:hidden; }
+.hbar-fill { height:100%;border-radius:6px;background:linear-gradient(90deg,#4a9eff,#00d4ff); }
+.hbar-value { width:26px;text-align:right;font:700 11px 'JetBrains Mono',monospace;color:#5d7894;flex-shrink:0; }
+
+@media (max-width: 800px) { .stat-strip { grid-template-columns:repeat(2,1fr); } .analytics-header { flex-direction:column; } .posture-box { text-align:left; } .hero-stat-row { grid-template-columns:1fr; } }
 
 /* ─ Premium workspace chrome ─ */
 [data-testid="stAppViewContainer"] { background:#05070c !important; }
@@ -408,9 +444,8 @@ def render_analytics(enriched, domain):
     posture = max(0, min(100, 100 - exposure_points))
     posture_color = '#21c354' if posture >= 80 else '#ffcc00' if posture >= 55 else '#ff8800' if posture >= 30 else '#ff4b4b'
     categories = Counter((x.get("category") or "Uncategorized") for x in enriched)
-    category_df = pd.DataFrame({"Category": list(categories.keys()), "Findings": list(categories.values())}).set_index("Category")
-    severity_df = pd.DataFrame({"Severity": ["Critical", "High", "Medium", "Low", "Informational", "False positive"], "Count": [critical, high, medium, low, informational, false_positive]}).set_index("Severity")
     top_category = categories.most_common(1)[0][0] if categories else "None"
+    noise_pct = round((false_positive / max(total, 1)) * 100)
     risk_message = "No urgent exposure signals detected in this scan." if not actionable else f"{critical + high} urgent finding(s) require prioritization, led by {top_category}."
 
     st.markdown(f"""
@@ -419,24 +454,81 @@ def render_analytics(enriched, domain):
         <div><div class='analytics-kicker'>Executive security overview</div><div class='analytics-title'>Risk posture for {escape(domain)}</div><div class='analytics-subtitle'>A decision-ready view of the passive attack-surface assessment</div></div>
         <div class='posture-box'><div class='posture-label'>Security posture score</div><div class='posture-score' style='color:{posture_color}'>{posture}<span style='font-size:14px;color:#58738e'> / 100</span></div><div class='posture-track'><div class='posture-fill' style='width:{posture}%;background:{posture_color}'></div></div></div>
       </div>
+
+      <div class='hero-stat-row'>
+        <div class='hero-stat-card urgent'>
+          <div class='hero-stat-icon'>⚠️</div>
+          <div class='hero-stat-label'>Urgent Queue</div>
+          <div class='hero-stat-value'>{critical + high:02d}</div>
+          <div class='hero-stat-sub'>🔴 Critical + High severity</div>
+        </div>
+        <div class='hero-stat-card quality'>
+          <div class='hero-stat-icon'>✅</div>
+          <div class='hero-stat-label'>Signal Quality</div>
+          <div class='hero-stat-value'>{noise_pct}%</div>
+          <div class='hero-stat-sub'>🧠 AI-filtered noise</div>
+        </div>
+      </div>
+
       <div class='stat-strip'>
         <div class='mini-stat'><div class='mini-stat-label'>Exposure candidates</div><div class='mini-stat-value'>{total}</div><div class='mini-stat-note'>indexed by OSINT</div></div>
         <div class='mini-stat'><div class='mini-stat-label'>Confirmed risks</div><div class='mini-stat-value' style='color:#ff6b6b'>{len(actionable)}</div><div class='mini-stat-note'>AI-triaged actions</div></div>
         <div class='mini-stat'><div class='mini-stat-label'>Urgent queue</div><div class='mini-stat-value' style='color:#ff8800'>{critical + high}</div><div class='mini-stat-note'>critical + high</div></div>
-        <div class='mini-stat'><div class='mini-stat-label'>Signal quality</div><div class='mini-stat-value' style='color:#21c354'>{round((false_positive / max(total,1))*100)}%</div><div class='mini-stat-note'>noise filtered</div></div>
+        <div class='mini-stat'><div class='mini-stat-label'>Signal quality</div><div class='mini-stat-value' style='color:#21c354'>{noise_pct}%</div><div class='mini-stat-note'>noise filtered</div></div>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("<div class='chart-card'><div class='chart-title'>Severity distribution</div><div class='chart-caption'>AI classification across indexed findings</div>", unsafe_allow_html=True)
-        st.bar_chart(severity_df, color="#e63946", height=220)
-        st.markdown("</div>", unsafe_allow_html=True)
+        sev_segments = [
+            ("Critical", critical, "#ff4b4b"), ("High", high, "#ff8800"),
+            ("Medium", medium, "#ffcc00"), ("Low", low, "#21c354"),
+            ("Informational", informational, "#4a9eff"),
+        ]
+        sev_total = sum(v for _, v, _ in sev_segments) or 1
+        cum = 0.0
+        stops = []
+        for _, val, color in sev_segments:
+            if val <= 0:
+                continue
+            start = cum / sev_total * 360
+            cum += val
+            end = cum / sev_total * 360
+            stops.append(f"{color} {start:.1f}deg {end:.1f}deg")
+        gradient = f"conic-gradient({', '.join(stops)})" if stops else "conic-gradient(#141c2e 0deg 360deg)"
+        legend_html = "".join(
+            f"<div class='legend-item'><span class='legend-dot' style='background:{color};'></span>{name}<span class='legend-count'>{val}</span></div>"
+            for name, val, color in sev_segments
+        )
+        st.markdown(f"""
+        <div class='chart-card'>
+            <div class='chart-title'>Severity distribution</div>
+            <div class='chart-caption'>AI classification across indexed findings</div>
+            <div class='donut-wrap'>
+                <div class='donut-chart' style='background:{gradient};'>
+                    <div class='donut-hole'><div class='donut-hole-value'>{sev_total}</div><div class='donut-hole-label'>Findings</div></div>
+                </div>
+                <div class='donut-legend'>{legend_html}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     with c2:
-        st.markdown("<div class='chart-card'><div class='chart-title'>Exposure categories</div><div class='chart-caption'>Where the attack surface is showing signals</div>", unsafe_allow_html=True)
-        st.bar_chart(category_df.sort_values("Findings"), color="#4a9eff", height=220)
-        st.markdown("</div>", unsafe_allow_html=True)
+        cat_items = categories.most_common()
+        max_cat = max((v for _, v in cat_items), default=1) or 1
+        bars_html = "".join(
+            f"<div class='hbar-row'><div class='hbar-label'>{escape(name)}</div>"
+            f"<div class='hbar-track'><div class='hbar-fill' style='width:{int(val / max_cat * 100)}%;'></div></div>"
+            f"<div class='hbar-value'>{val}</div></div>"
+            for name, val in cat_items
+        ) or "<div class='hbar-row'><div class='hbar-label'>No categories</div></div>"
+        st.markdown(f"""
+        <div class='chart-card'>
+            <div class='chart-title'>Exposure categories</div>
+            <div class='chart-caption'>Where the attack surface is showing signals</div>
+            <div class='hbar-list'>{bars_html}</div>
+        </div>
+        """, unsafe_allow_html=True)
     st.markdown(f"<div class='insight-card'>💡 <strong>Analyst insight:</strong> {escape(risk_message)} Use the Actionable Findings queue below to generate remediation artifacts and prepare the remediation plan.</div>", unsafe_allow_html=True)
 
 
