@@ -1,3 +1,4 @@
+from httpx import __name
 from httpx import Response
 import os
 import json
@@ -48,5 +49,27 @@ def triage_findings(findings : list):
             temparature=0.2
         )
     )
-    
+
     return json.loads(response.text)
+
+if __name__ == "__main__":
+    sample_findings = [
+        {
+            "category": "Exposed Configs & Secrets",
+            "title": "Index of /backup",
+            "link": "[http://testphp.vulnweb.com/backup/.env](http://testphp.vulnweb.com/backup/.env)",
+            "snippet": "DB_PASSWORD=root_pass_2024 AWS_SECRET=AKIA...",
+            "query_used": "site:testphp.vulnweb.com ext:env"
+        },
+        {
+            "category": "Exposed Admin Portals",
+            "title": "How to secure your admin panel - Security Blog",
+            "link": "[https://testphp.vulnweb.com/blog/securing-admin](https://testphp.vulnweb.com/blog/securing-admin)",
+            "snippet": "In this tutorial we explain why exposing /admin/login.php is dangerous.",
+            "query_used": "site:testphp.vulnweb.com inurl:admin"
+        }
+    ]
+
+    print("[*] Running test triage...")
+    result = triage_findings(sample_findings)
+    print(json.dumps(result, indent=2))
