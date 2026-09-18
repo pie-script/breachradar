@@ -90,4 +90,4 @@ python scripts/run_pipeline.py
 
 ## 🔒 Security Notice
 
-BreachRadar performs **passive reconnaissance only** using Google Search Intelligence via SerpApi. It executes zero active packet probing, port scanning, or intrusive testing against target servers.
+BreachRadar performs only **passive reconnaissance only** using Google Search Intelligence via SerpApi. It executes zero active packet probing, port scanning, or intrusive testing against target servers.
