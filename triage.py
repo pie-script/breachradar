@@ -1,5 +1,3 @@
-from httpx import __name
-from httpx import Response
 import os
 import json
 from dotenv import load_dotenv
@@ -52,6 +50,64 @@ def triage_findings(findings : list):
     )
 
     return json.loads(response.text)
+
+def generate_executive_summary(domain: str, findings: list) -> str:
+    """Generates a high-level 2-3 sentence CISO risk summary of the domain posture."""
+    if not findings:
+        return f"Target domain `{domain}` exhibits a clean external footprint with zero indexed exposures across scanned vectors."
+    
+    prompt = f"""
+    You are a Chief Information Security Officer (CISO) delivering an executive risk summary for domain: {domain}.
+    Based on these analyzed findings:
+    {json.dumps(findings, indent=2)}
+
+    Provide a concise, professional, 2-3 sentence executive threat briefing.
+    Highlight the overall security posture, most critical exposed vector (if any), and urgent organizational priority.
+    Keep it strictly plaintext, direct, and authoritative with no markdown headers or bullet lists.
+    """
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=[prompt],
+            config=types.GenerateContentConfig(temperature=0.3)
+        )
+        return response.text.strip()
+    except Exception as e:
+        return f"Executive threat assessment temporarily unavailable: {e}"
+
+
+def generate_remediation_patch(link: str, risk_summary: str) -> dict:
+    """Generates copy-paste configuration snippets (Nginx, Apache, robots.txt) for an exposure."""
+    prompt = f"""
+    You are an DevSecOps engineer. Provide actionable remediation configuration snippets to fix this exposed asset:
+    Target Link: {link}
+    Risk Description: {risk_summary}
+
+    Return strictly a JSON object with this schema:
+    {{
+      "config_type": "Nginx / Apache / robots.txt / Cloudflare Rule",
+      "code_snippet": "the exact server block or rule snippet",
+      "instructions": "1-2 sentence explanation of where to deploy this file"
+    }}
+    """
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=[prompt],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.1
+            )
+        )
+        return json.loads(response.text)
+    except Exception as e:
+        return {
+            "config_type": "Error",
+            "code_snippet": "# Unable to generate patch artifact",
+            "instructions": str(e)
+        }
+
+
 
 if __name__ == "__main__":
     sample_findings = [
