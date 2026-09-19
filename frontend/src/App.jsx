@@ -1,12 +1,10 @@
 import { useState, useMemo } from 'react'
 import Sidebar from './components/Sidebar.jsx'
-import WorkspaceBar from './components/WorkspaceBar.jsx'
-import Hero from './components/Hero.jsx'
+import TopNav from './components/TopNav.jsx'
+import KpiRow from './components/KpiRow.jsx'
+import AnalyticsSection from './components/AnalyticsSection.jsx'
+import FindingsTable from './components/FindingsTable.jsx'
 import IdleState from './components/IdleState.jsx'
-import AnalyticsDashboard from './components/AnalyticsDashboard.jsx'
-import ExecutiveSummary from './components/ExecutiveSummary.jsx'
-import FiltersBar from './components/FiltersBar.jsx'
-import ResultsTabs from './components/ResultsTabs.jsx'
 import { scanDomain, generatePatch } from './api.js'
 
 export default function App() {
@@ -14,23 +12,21 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [scanData, setScanData] = useState(null)
   const [error, setError] = useState(null)
+  const [activeTab, setActiveTab] = useState('dashboard')
 
-  const [severityFilter, setSeverityFilter] = useState('All')
-  const [categoryFilter, setCategoryFilter] = useState('All')
-  const [showNoise, setShowNoise] = useState(false)
-
-  const handleScan = async () => {
-    if (!domain.trim()) {
+  const handleScan = async (targetDomain) => {
+    const target = targetDomain || domain
+    if (!target.trim()) {
       setError('Please enter a target domain.')
       return
     }
     setError(null)
     setLoading(true)
     try {
-      const data = await scanDomain(domain.trim())
+      const data = await scanDomain(target.trim())
       setScanData(data)
     } catch (err) {
-      setError(err.message || 'Failed to scan target domain.')
+      setError(err.message || 'Failed to scan target domain. Make sure the backend server is running.')
     } finally {
       setLoading(false)
     }
@@ -42,72 +38,112 @@ export default function App() {
 
   const results = scanData?.results || []
   const stats = scanData?.stats || null
-
-  const actionableResults = useMemo(() => {
-    return results.filter((r) => !r.is_false_positive)
+  const actionableCount = useMemo(() => {
+    return results.filter((r) => !r.is_false_positive).length
   }, [results])
 
-  const visibleResults = useMemo(() => {
-    return results.filter((item) => {
-      if (!showNoise && item.is_false_positive) return false
-      if (severityFilter !== 'All' && item.severity !== severityFilter) return false
-      if (categoryFilter !== 'All' && item.category !== categoryFilter) return false
-      return true
-    })
-  }, [results, severityFilter, categoryFilter, showNoise])
-
-  const visibleActionable = useMemo(() => {
-    return visibleResults.filter((r) => !r.is_false_positive)
-  }, [visibleResults])
-
   return (
-    <div className="app-shell">
+    <div className="app-layout">
+      {/* 1. Left Sidebar Navigation */}
       <Sidebar
-        domain={domain}
-        setDomain={setDomain}
-        onScan={handleScan}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        actionableCount={actionableCount}
+        totalCount={results.length}
         loading={loading}
         isComplete={Boolean(scanData)}
-        error={error}
       />
 
-      <main className="main-col">
-        <WorkspaceBar domain={scanData?.domain || domain} />
-        <Hero />
+      {/* 2. Main Body Area */}
+      <div className="main-wrapper">
+        <TopNav
+          domain={domain}
+          setDomain={setDomain}
+          onScan={handleScan}
+          loading={loading}
+          targetScanned={scanData?.domain}
+        />
 
-        {!scanData ? (
-          <IdleState />
-        ) : (
-          <>
-            <AnalyticsDashboard stats={stats} domain={scanData.domain} />
-            <ExecutiveSummary summary={scanData.executive_summary} domain={scanData.domain} />
-            <FiltersBar
-              severityFilter={severityFilter}
-              setSeverityFilter={setSeverityFilter}
-              categoryFilter={categoryFilter}
-              setCategoryFilter={setCategoryFilter}
-              showNoise={showNoise}
-              setShowNoise={setShowNoise}
-              categories={stats?.categories || []}
-            />
-            <ResultsTabs
-              results={results}
-              actionableResults={actionableResults}
-              visibleResults={visibleResults}
-              visibleActionable={visibleActionable}
-              rawFindings={scanData.raw_findings}
-              domain={scanData.domain}
-              onPatch={handlePatch}
-            />
-          </>
-        )}
+        <main className="content-body">
+          {error && (
+            <div style={{
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#dc2626',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600,
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
 
-        <footer className="br-footer">
-          <div className="br-footer-text">
-            Built with <strong>SerpApi</strong> Search Intelligence · <strong>Gemini AI</strong> · React & FastAPI
-          </div>
-        </footer>
-      </main>
+          {!scanData ? (
+            <IdleState onSelectTarget={(target) => {
+              setDomain(target)
+              handleScan(target)
+            }} />
+          ) : (
+            <>
+              {/* Top KPI Metric Cards (Image 1 & 2 Style) */}
+              <KpiRow stats={stats} />
+
+              {/* Middle Section: Posture Radial Gauge + Categories + CISO Briefing */}
+              {activeTab === 'dashboard' && (
+                <AnalyticsSection
+                  stats={stats}
+                  executiveSummary={scanData.executive_summary}
+                  domain={scanData.domain}
+                />
+              )}
+
+              {/* Data Table View (Active in Dashboard, Actionable, or All tabs) */}
+              {(activeTab === 'dashboard' || activeTab === 'actionable' || activeTab === 'all') && (
+                <FindingsTable
+                  results={activeTab === 'actionable' ? results.filter(r => !r.is_false_positive) : results}
+                  domain={scanData.domain}
+                  onPatch={handlePatch}
+                />
+              )}
+
+              {/* Raw Telemetry Tab */}
+              {activeTab === 'raw' && (
+                <div className="surface-card">
+                  <div className="card-title-row">
+                    <div>
+                      <div className="card-heading">Raw Intelligence Telemetry</div>
+                      <div className="card-subheading">Full JSON output payload returned from API</div>
+                    </div>
+                  </div>
+                  <pre style={{
+                    background: '#0f172a',
+                    color: '#e2e8f0',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: '12px',
+                    maxHeight: '500px',
+                    overflow: 'auto',
+                    whiteSpace: 'pre-wrap',
+                  }}>
+                    {JSON.stringify(scanData, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </>
+          )}
+
+          <footer className="footer-bar">
+            Powered by <strong>SerpApi Intelligence</strong> · <strong>Google Gemini AI</strong> · React & FastAPI
+          </footer>
+        </main>
+      </div>
     </div>
   )
 }
