@@ -79,6 +79,19 @@ export default function App() {
     }
   }
 
+  const handleReset = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch (e) {
+      console.error(e)
+    }
+    setScansHistory([])
+    setScanData(null)
+    setDomain('testphp.vulnweb.com')
+    setActiveTab('dashboard')
+    setError(null)
+  }
+
   const handleScan = async (targetDomain) => {
     const target = targetDomain || domain
     if (!target.trim()) {
@@ -133,6 +146,7 @@ export default function App() {
           scansHistory={scansHistory}
           onSelectStoredTarget={handleSelectStoredDomain}
           onOpenPortfolio={() => setActiveTab('portfolio')}
+          onReset={handleReset}
         />
 
         <main className="content-body">
