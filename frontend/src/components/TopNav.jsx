@@ -9,6 +9,7 @@ export default function TopNav({
   scansHistory = [],
   onSelectStoredTarget,
   onOpenPortfolio,
+  onReset,
 }) {
   const [localInput, setLocalInput] = useState(domain || 'testphp.vulnweb.com')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -110,6 +111,33 @@ export default function TopNav({
             Target: <code style={{ color: '#0f172a', background: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>{targetScanned}</code>
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={() => {
+            setLocalInput('testphp.vulnweb.com')
+            if (onReset) onReset()
+          }}
+          title="Clear scan data and return to clean radar screen"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            color: '#475569',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span>🔄</span>
+          <span>Reset Scan</span>
+        </button>
 
         <div className="top-avatar" title="Security Operations">
           🛡️
