@@ -8,7 +8,15 @@ const STAGES = [
   'Report Ready',
 ]
 
-export default function Sidebar({ activeTab, setActiveTab, actionableCount = 0, totalCount = 0, loading, isComplete }) {
+export default function Sidebar({
+  activeTab,
+  setActiveTab,
+  actionableCount = 0,
+  totalCount = 0,
+  portfolioCount = 0,
+  loading,
+  isComplete,
+}) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -22,16 +30,40 @@ export default function Sidebar({ activeTab, setActiveTab, actionableCount = 0, 
       </div>
 
       <nav className="sidebar-nav">
-        <div className="nav-section-title">Operations</div>
-        
+        <div className="nav-section-title">Views</div>
+
+        <button
+          type="button"
+          className={`nav-item ${activeTab === 'portfolio' ? 'active' : ''}`}
+          onClick={() => setActiveTab('portfolio')}
+        >
+          <span className="nav-icon">🌐</span>
+          <span>Portfolio Overview</span>
+          {portfolioCount > 0 && (
+            <span style={{
+              marginLeft: 'auto',
+              fontSize: '10.5px',
+              fontWeight: 700,
+              background: 'rgba(56, 189, 248, 0.2)',
+              color: '#38bdf8',
+              padding: '2px 7px',
+              borderRadius: '9999px',
+            }}>
+              {portfolioCount}
+            </span>
+          )}
+        </button>
+
         <button
           type="button"
           className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => setActiveTab('dashboard')}
         >
           <span className="nav-icon">📊</span>
-          <span>Dashboard</span>
+          <span>Domain Deep Dive</span>
         </button>
+
+        <div className="nav-section-title">Telemetry</div>
 
         <button
           type="button"
